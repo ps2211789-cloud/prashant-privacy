@@ -1,0 +1,52 @@
+
+name: Prashant Privacy APK Build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Decode project archive
+        run: |
+          python3 - <<'PY'
+          import base64
+          import zipfile
+          from pathlib import Path
+
+          data = Path("prashant-privacy-project-archive.txt").read_text().strip()
+          Path("project.zip").write_bytes(base64.b64decode(data))
+          with zipfile.ZipFile("project.zip") as z:
+              z.extractall("project")
+              print("Archive contents:")
+              print("\n".join(z.namelist()))
+          PY
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+
+      - name: Build Android APK
+        working-directory: project
+        run: gradle assembleDebug
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: Prashant-Privacy-APK
+          path: project/**/build/outputs/apk/debug/*.apk
+          
